@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ColorCash Pro - Betting Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f1923;
+            color: #e2e8f0;
+        }
+        /* Main container styling */
+        .game-container {
+            background-color: #1a2c38;
+            border: 1px solid #2c3a48;
+        }
+        /* Button styling */
+        .color-btn, .number-btn {
+            transition: all 0.2s ease-in-out;
+            border: 2px solid transparent;
+        }
+        .color-btn {
+            line-height: 1.1;
+        }
+        .color-btn.selected {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
+        }
+        .number-btn.selected {
+            background-color: #facc15; /* yellow-400 */
+            color: #1a2c38;
+            border-color: #fde047;
+        }
+        .btn-disabled {
+            filter: grayscale(80%);
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        /* Bet amount controls */
+        .bet-control {
+            background-color: #2c3a48;
+            color: #a0aec0;
+        }
+        .bet-control:hover {
+            background-color: #4a5568;
+            color: #ffffff;
+        }
+        /* History styling */
+        .history-item {
+            background-color: #2c3a48;
+        }
+        .result-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        /* Modal and Animation */
+        .modal-bg { background-color: rgba(15, 25, 35, 0.8); backdrop-filter: blur(5px); }
+        .countdown-circle {
+            animation: countdown-anim 1s linear infinite;
+        }
+        @keyframes countdown-anim {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-md mx-auto game-container rounded-2xl shadow-2xl">
+        <!-- Header with Balance -->
+        <header class="flex justify-between items-center p-4 border-b border-gray-700">
+            <h1 class="text-2xl font-bold text-white tracking-wider">ColorCash</h1>
+            <div class="text-right">
+                <p class="text-sm text-gray-400">Balance</p>
+                <p id="balance" class="text-lg font-bold text-yellow-400">₹1000.00</p>
+            </div>
+        </header>
+
+        <main class="p-4 md:p-6">
+            <!-- Color Selection -->
+            <div class="mb-6">
+                <h2 class="text-lg font-semibold mb-3 text-center text-gray-300">Choose a Payout</h2>
+                <div class="flex justify-around">
+                    <button id="btn-green" class="color-btn flex flex-col items-center justify-center flex-1 py-3 px-4 text-white font-bold rounded-lg bg-green-500 hover:bg-green-600 mx-1" onclick="selectColor('green')">
+                        <span class="text-2xl font-extrabold">2x</span>
+                        <span class="text-xs font-medium opacity-80">Normal</span>
+                    </button>
+                    <button id="btn-violet" class="color-btn flex flex-col items-center justify-center flex-1 py-3 px-4 text-white font-bold rounded-lg bg-violet-500 hover:bg-violet-600 mx-1" onclick="selectColor('violet')">
+                        <span class="text-2xl font-extrabold">4x</span>
+                        <span class="text-xs font-medium opacity-80">Violet</span>
+                    </button>
+                    <button id="btn-red" class="color-btn flex flex-col items-center justify-center flex-1 py-3 px-4 text-white font-bold rounded-lg bg-red-500 hover:bg-red-600 mx-1" onclick="selectColor('red')">
+                        <span class="text-2xl font-extrabold">2x</span>
+                        <span class="text-xs font-medium opacity-80">Normal</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Number Selection -->
+            <div class="mb-6">
+                <h2 class="text-lg font-semibold mb-3 text-center text-gray-300">...and/or a Number</h2>
+                <div class="grid grid-cols-5 gap-2">
+                    <button class="number-btn p-3 text-lg font-semibold rounded-md bg-[#2c3a48] hover:bg-[#4a5568]" onclick="selectNumber(0)">0</button>
+                    <button class="number-btn p-3 text-lg font-semibold rounded-md bg-[#2c3a48] hover:bg-[#4a5568]" onclick="selectNumber(1)">1</button>
+                    <button class="number-btn p-3 text-lg font-semibold rounded-md bg-[#2c3a48] hover:bg-[#4a5568]" onclick="selectNumber(2)">2</button>
+                    <button class="number-btn p-3 text-lg font-semibold rounded-md bg-[#2c3a48] hover:bg-[#4a5568]" onclick="selectNumber(3)">3</button>
+                    <button class="number-btn p-3 text-lg font-semibold rounded-md bg-[#2c3a48] hover:bg-[#4a5568]" onclick="selectNumber(4)">4</button>
+                    <button class="number-btn p-3 text-lg font-semibold rounded-md bg-[#2c3a48] hover:bg-[#4a5568]" onclick="selectNumber(5)">5</button>
+                    <button class="number-btn p-3 text-lg font-semibold rounded-md bg-[#2c3a48] hover:bg-[#4a5568]" onclick="selectNumber(6)">6</button>
+                    <button class="number-btn p-3 text-lg font-semibold rounded-md bg-[#2c3a48] hover:bg-[#4a5568]" onclick="selectNumber(7)">7</button>
+                    <button class="number-btn p-3 text-lg font-semibold rounded-md bg-[#2c3a48] hover:bg-[#4a5568]" onclick="selectNumber(8)">8</button>
+                    <button class="number-btn p-3 text-lg font-semibold rounded-md bg-[#2c3a48] hover:bg-[#4a5568]" onclick="selectNumber(9)">9</button>
+                </div>
+            </div>
+
+            <!-- Bet Amount and Button -->
+            <div class="space-y-4">
+                 <div class="flex items-center bg-[#0f1923] rounded-lg p-1">
+                    <span class="text-yellow-400 font-bold px-3">₹</span>
+                    <input type="number" id="bet-amount" class="flex-grow bg-transparent text-white font-semibold text-lg p-2 focus:outline-none w-full" value="10.00" step="0.01" min="0.01">
+                    <button class="bet-control font-bold text-lg px-4 py-2 rounded-md" onclick="halfBet()">½</button>
+                    <button class="bet-control font-bold text-lg px-4 py-2 rounded-md" onclick="doubleBet()">2x</button>
+                </div>
+                <button id="place-bet" class="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold text-xl rounded-lg transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-green-800">Place Bet</button>
+            </div>
+        </main>
+        
+        <!-- History Section -->
+        <div class="p-4 md:p-6 border-t border-gray-700">
+            <h3 class="text-lg font-semibold mb-3 text-center text-gray-300">My Bets</h3>
+            <div id="history-list" class="space-y-2 max-h-48 overflow-y-auto">
+                <p class="text-center text-gray-500">No bets placed yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Animation/Result Modal -->
+    <div id="result-modal" class="fixed inset-0 modal-bg items-center justify-center hidden z-50">
+        <div id="animation-view" class="text-center">
+            <div class="relative w-32 h-32 flex items-center justify-center">
+                <div class="absolute inset-0 rounded-full border-4 border-t-yellow-400 border-gray-600 countdown-circle"></div>
+                <span id="countdown-timer" class="text-5xl font-bold text-white">3</span>
+            </div>
+            <p class="mt-4 text-2xl text-white font-semibold">Revealing Result...</p>
+        </div>
+        <div id="result-view" class="bg-[#1a2c38] rounded-2xl shadow-2xl p-8 text-center max-w-sm w-full hidden">
+            <h2 class="text-3xl font-bold mb-4">Result</h2>
+            <div id="modal-result-display" class="w-28 h-28 rounded-full mx-auto flex items-center justify-center text-5xl font-extrabold mb-4 border-4 border-gray-600">
+                <span id="modal-result-number"></span>
+            </div>
+            <p id="modal-message" class="text-xl mb-6"></p>
+            <button class="py-2 px-8 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold rounded-lg" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // --- STATE MANAGEMENT ---
+        let balance = 1000;
+        let selectedColor = null;
+        let selectedNumber = null;
+        let history = [];
+
+        // --- DOM ELEMENTS ---
+        const balanceEl = document.getElementById('balance');
+        const betAmountEl = document.getElementById('bet-amount');
+        const historyListEl = document.getElementById('history-list');
+        const colorButtons = document.querySelectorAll('.color-btn');
+        const numberButtons = document.querySelectorAll('.number-btn');
+        const placeBetBtn = document.getElementById('place-bet');
+        
+        // Modal elements
+        const resultModal = document.getElementById('result-modal');
+        const animationView = document.getElementById('animation-view');
+        const resultView = document.getElementById('result-view');
+        const countdownTimerEl = document.getElementById('countdown-timer');
+        const modalResultDisplay = document.getElementById('modal-result-display');
+        const modalResultNumber = document.getElementById('modal-result-number');
+        const modalMessage = document.getElementById('modal-message');
+
+        // --- SELECTION & VALIDATION LOGIC ---
+        function selectColor(color) {
+            selectedColor = selectedColor === color ? null : color;
+            updateSelections();
+        }
+
+        function selectNumber(number) {
+            selectedNumber = selectedNumber === number ? null : number;
+            updateSelections();
+        }
+
+        function updateSelections() {
+            // Update color buttons
+            colorButtons.forEach(btn => {
+                btn.classList.toggle('selected', btn.id === `btn-${selectedColor}`);
+            });
+            // Update number buttons
+            numberButtons.forEach(btn => {
+                const num = parseInt(btn.innerText);
+                btn.classList.toggle('selected', num === selectedNumber);
+                
+                // Disable invalid numbers based on color selection
+                let isDisabled = false;
+                if (selectedColor === 'green' && num % 2 !== 0 && num !== 5) isDisabled = true;
+                if (selectedColor === 'red' && num % 2 === 0 && num !== 0) isDisabled = true;
+                if (selectedColor === 'violet' && num !== 0 && num !== 5) isDisabled = true;
+                
+                if (selectedNumber !== null) { // Disable invalid colors based on number
+                    if (num % 2 !== 0 && num !== 5) document.getElementById('btn-green').classList.add('btn-disabled');
+                    else document.getElementById('btn-green').classList.remove('btn-disabled');
+                    
+                    if (num % 2 === 0 && num !== 0) document.getElementById('btn-red').classList.add('btn-disabled');
+                    else document.getElementById('btn-red').classList.remove('btn-disabled');
+
+                    if (num !== 0 && num !== 5) document.getElementById('btn-violet').classList.add('btn-disabled');
+                    else document.getElementById('btn-violet').classList.remove('btn-disabled');
+                } else {
+                     document.getElementById('btn-green').classList.remove('btn-disabled');
+                     document.getElementById('btn-red').classList.remove('btn-disabled');
+                     document.getElementById('btn-violet').classList.remove('btn-disabled');
+                }
+
+                btn.classList.toggle('btn-disabled', isDisabled);
+                if(isDisabled) btn.disabled = true;
+                else btn.disabled = false;
+            });
+        }
+
+        // --- BET AMOUNT CONTROLS ---
+        function halfBet() {
+            let currentBet = parseFloat(betAmountEl.value);
+            currentBet /= 2;
+            betAmountEl.value = Math.max(0.01, currentBet).toFixed(2);
+        }
+
+        function doubleBet() {
+            let currentBet = parseFloat(betAmountEl.value);
+            currentBet *= 2;
+            betAmountEl.value = currentBet.toFixed(2);
+        }
+
+
+        // --- UI UPDATES ---
+        function updateBalance() {
+            balanceEl.innerText = `₹${balance.toFixed(2)}`;
+        }
+
+        function updateHistory() {
+            if (history.length === 0) {
+                historyListEl.innerHTML = '<p class="text-center text-gray-500">No bets placed yet.</p>';
+                return;
+            }
+            historyListEl.innerHTML = history.slice(0, 10).map(item => {
+                const outcomeClass = item.net > 0 ? 'text-green-400' : 'text-red-400';
+                const netSign = item.net > 0 ? '+' : '';
+                
+                let resultColorStyle;
+                if(item.resultColor.includes('violet')) {
+                    const otherColor = item.resultColor.find(c => c !== 'violet');
+                    resultColorStyle = `background: linear-gradient(to right, ${otherColor === 'red' ? '#ef4444' : '#22c55e'}, #8b5cf6);`;
+                } else {
+                    resultColorStyle = `background-color: ${item.resultColor[0] === 'red' ? '#ef4444' : '#22c55e'};`;
+                }
+
+                return `
+                    <div class="history-item flex justify-between items-center p-2 rounded-md text-sm">
+                        <div class="flex items-center gap-2">
+                           <span class="result-dot" style="${resultColorStyle}"></span>
+                           <span>${item.betType}</span>
+                        </div>
+                        <div class="font-semibold ${outcomeClass}">
+                           ${netSign}${item.net.toFixed(2)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function showResult(resultNumber, resultColor, message) {
+            modalResultNumber.innerText = resultNumber;
+            modalMessage.innerHTML = message;
+            
+            let resultColorStyle;
+            if(resultColor.includes('violet')) {
+                const otherColor = resultColor.find(c => c !== 'violet');
+                resultColorStyle = `linear-gradient(to right, ${otherColor === 'red' ? '#ef4444' : '#22c55e'}, #8b5cf6)`;
+            } else {
+                resultColorStyle = resultColor[0] === 'red' ? '#ef4444' : '#22c55e';
+            }
+            modalResultDisplay.style.background = resultColorStyle;
+            
+            animationView.classList.add('hidden');
+            resultView.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            resultModal.classList.add('hidden');
+        }
+
+        // --- GAME LOGIC ---
+        placeBetBtn.addEventListener('click', () => {
+            const betAmount = parseFloat(betAmountEl.value);
+
+            // Validation
+            if (!selectedColor && selectedNumber === null) {
+                alert("Please make a selection.");
+                return;
+            }
+            if (isNaN(betAmount) || betAmount < 0.01) {
+                alert("Minimum bet is ₹0.01.");
+                return;
+            }
+            if (betAmount > balance) {
+                alert("Insufficient balance.");
+                return;
+            }
+
+            // Deduct bet amount
+            balance -= betAmount;
+            updateBalance();
+            
+            // Start animation
+            resultModal.classList.remove('hidden');
+            resultModal.classList.add('flex');
+            resultView.classList.add('hidden');
+            animationView.classList.remove('hidden');
+            
+            let countdown = 3;
+            countdownTimerEl.innerText = countdown;
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                countdownTimerEl.innerText = countdown;
+                if (countdown === 0) {
+                    clearInterval(countdownInterval);
+                    runGameLogic(betAmount);
+                }
+            }, 1000);
+        });
+        
+        function runGameLogic(betAmount) {
+            // --- BACKEND SIMULATION ---
+            const resultNumber = Math.floor(Math.random() * 10);
+            let resultColor = []; // Now an array
+            
+            // Violet is rare, only on 0 or 5
+            const isVioletRoll = (resultNumber === 0 || resultNumber === 5) && Math.random() < 0.2; // 20% chance for violet
+
+            if (isVioletRoll) {
+                resultColor.push('violet');
+                resultColor.push(resultNumber === 0 ? 'green' : 'red');
+            } else {
+                resultColor.push(resultNumber % 2 === 0 ? 'green' : 'red');
+            }
+            // --- END OF SIMULATION ---
+
+            let winnings = 0;
+            let message = "";
+            let betType = selectedColor ? selectedColor.charAt(0).toUpperCase() + selectedColor.slice(1) : '';
+            if (selectedNumber !== null) {
+                betType += ` + ${selectedNumber}`;
+            }
+
+
+            // Calculate winnings
+            const colorMatch = selectedColor && resultColor.includes(selectedColor);
+            const numberMatch = selectedNumber === resultNumber;
+
+            if (selectedColor && selectedNumber !== null) { // Bet on both
+                if(colorMatch && numberMatch) {
+                    if(selectedColor === 'violet') {
+                        winnings = betAmount * 16;
+                        message = `16x SUPER WIN! <br>+₹${winnings.toFixed(2)}`;
+                    } else {
+                        winnings = betAmount * 9;
+                        message = `9x BIG WIN! <br>+₹${winnings.toFixed(2)}`;
+                    }
+                }
+            } else if (selectedColor) { // Bet on color only
+                 const isVioletResult = resultColor.includes('violet');
+                 if(colorMatch) {
+                    if(selectedColor === 'violet') {
+                        winnings = betAmount * 4;
+                        message = `4x WIN! <br>+₹${winnings.toFixed(2)}`;
+                    } else { // User bet Red or Green
+                        if (isVioletResult) { // And result was a Violet pair
+                            winnings = betAmount * 1.5;
+                            message = `1.5x WIN! <br>+₹${winnings.toFixed(2)}`;
+                        } else { // And result was a normal color
+                             winnings = betAmount * 2;
+                             message = `2x WIN! <br>+₹${winnings.toFixed(2)}`;
+                        }
+                    }
+                }
+            } else if (selectedNumber !== null) { // Bet on number only
+                 if (numberMatch) {
+                    winnings = betAmount * 9;
+                    message = `9x WIN! <br>+₹${winnings.toFixed(2)}`;
+                }
+            }
+            
+            if (winnings === 0) {
+                message = `You lost. Try again!`;
+            }
+
+            // Update balance with winnings
+            balance += winnings;
+            
+            // Add to history
+            history.unshift({
+                amount: betAmount,
+                betType: betType.trim(),
+                resultNumber: resultNumber,
+                resultColor: resultColor,
+                net: winnings - betAmount
+            });
+
+            // Update UI
+            showResult(resultNumber, resultColor, message);
+            updateBalance();
+            updateHistory();
+            
+            // Reset selections
+            selectedColor = null;
+            selectedNumber = null;
+            updateSelections();
+        }
+
+        // --- INITIALIZATION ---
+        window.onload = () => {
+            updateBalance();
+            updateHistory();
+            updateSelections();
+        };
+    </script>
+
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyDQSqJAAPaSYK-raS4DQMEs0L3Wu3AXhbU",
+    authDomain: "colorcash-195c0.firebaseapp.com",
+    projectId: "colorcash-195c0",
+    storageBucket: "colorcash-195c0.firebasestorage.app",
+    messagingSenderId: "48437075178",
+    appId: "1:48437075178:web:7d0797771e41d18e9c0b93",
+    measurementId: "G-KBPF9538RJ"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+
+</body>
+</html>
